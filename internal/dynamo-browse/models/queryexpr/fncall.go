@@ -59,7 +59,10 @@ func (a *astFunctionCall) evalToIR(ctx *evalContext, info *models.TableInfo) (ir
 		return nil, err
 	}
 
-	val, err := builtinFn(context.Background(), irValues)
+	cCtx := context.WithValue(context.Background(), timeSourceContextKey, ctx.timeSource)
+	cCtx = context.WithValue(cCtx, currentResultSetContextKey, ctx.ctxResultSet)
+	cCtx = context.WithValue(cCtx, currentPasteboardControllerKey, ctx.pasteboardController)
+	val, err := builtinFn(cCtx, irValues)
 	if err != nil {
 		return nil, err
 	}
@@ -90,6 +93,7 @@ func (a *astFunctionCall) evalItem(ctx *evalContext, item models.Item) (exprValu
 
 	cCtx := context.WithValue(context.Background(), timeSourceContextKey, ctx.timeSource)
 	cCtx = context.WithValue(cCtx, currentResultSetContextKey, ctx.ctxResultSet)
+	cCtx = context.WithValue(cCtx, currentPasteboardControllerKey, ctx.pasteboardController)
 	return fn(cCtx, args)
 }
 

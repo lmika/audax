@@ -175,6 +175,7 @@ func (c *TableReadController) PromptForQuery() tea.Msg {
 				if err != nil {
 					return events.Error(err)
 				}
+				q = q.WithCurrentResultSet(resultSet).WithPasteboardController(c.pasteboardProvider)
 			}
 
 			return c.runQuery(resultSet.TableInfo, q, "", true, nil)

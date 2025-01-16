@@ -16,11 +16,12 @@ import (
 )
 
 type QueryExpr struct {
-	ast              *astExpr
-	index            string
-	names            map[string]string
-	values           map[string]types.AttributeValue
-	currentResultSet *models.ResultSet
+	ast                  *astExpr
+	index                string
+	names                map[string]string
+	values               map[string]types.AttributeValue
+	currentResultSet     *models.ResultSet
+	pasteboardController PasteBoardController
 
 	// tests fields only
 	timeSource timeSource
@@ -143,11 +144,12 @@ func (md *QueryExpr) HashCode() uint64 {
 
 func (md *QueryExpr) WithNameParams(value map[string]string) *QueryExpr {
 	return &QueryExpr{
-		ast:              md.ast,
-		index:            md.index,
-		names:            value,
-		values:           md.values,
-		currentResultSet: md.currentResultSet,
+		ast:                  md.ast,
+		index:                md.index,
+		names:                value,
+		values:               md.values,
+		pasteboardController: md.pasteboardController,
+		currentResultSet:     md.currentResultSet,
 	}
 }
 
@@ -169,31 +171,45 @@ func (md *QueryExpr) ValueParamOrNil(name string) types.AttributeValue {
 
 func (md *QueryExpr) WithValueParams(value map[string]types.AttributeValue) *QueryExpr {
 	return &QueryExpr{
-		ast:              md.ast,
-		index:            md.index,
-		names:            md.names,
-		values:           value,
-		currentResultSet: md.currentResultSet,
+		ast:                  md.ast,
+		index:                md.index,
+		names:                md.names,
+		values:               value,
+		pasteboardController: md.pasteboardController,
+		currentResultSet:     md.currentResultSet,
 	}
 }
 
 func (md *QueryExpr) WithIndex(index string) *QueryExpr {
 	return &QueryExpr{
-		ast:              md.ast,
-		index:            index,
-		names:            md.names,
-		values:           md.values,
-		currentResultSet: md.currentResultSet,
+		ast:                  md.ast,
+		index:                index,
+		names:                md.names,
+		values:               md.values,
+		pasteboardController: md.pasteboardController,
+		currentResultSet:     md.currentResultSet,
 	}
 }
 
 func (md *QueryExpr) WithCurrentResultSet(currentResultSet *models.ResultSet) *QueryExpr {
 	return &QueryExpr{
-		ast:              md.ast,
-		index:            md.index,
-		names:            md.names,
-		values:           md.values,
-		currentResultSet: currentResultSet,
+		ast:                  md.ast,
+		index:                md.index,
+		names:                md.names,
+		values:               md.values,
+		pasteboardController: md.pasteboardController,
+		currentResultSet:     currentResultSet,
+	}
+}
+
+func (md *QueryExpr) WithPasteboardController(pbController PasteBoardController) *QueryExpr {
+	return &QueryExpr{
+		ast:                  md.ast,
+		index:                md.index,
+		names:                md.names,
+		values:               md.values,
+		pasteboardController: pbController,
+		currentResultSet:     md.currentResultSet,
 	}
 }
 
@@ -230,9 +246,10 @@ func (md *QueryExpr) IsModifiablePath(item models.Item) bool {
 
 func (md *QueryExpr) evalContext() *evalContext {
 	return &evalContext{
-		namePlaceholders:  md.names,
-		valuePlaceholders: md.values,
-		ctxResultSet:      md.currentResultSet,
+		namePlaceholders:     md.names,
+		valuePlaceholders:    md.values,
+		ctxResultSet:         md.currentResultSet,
+		pasteboardController: md.pasteboardController,
 	}
 }
 
@@ -279,12 +296,13 @@ func (qc *queryCalcInfo) addKey(key string) bool {
 }
 
 type evalContext struct {
-	namePlaceholders  map[string]string
-	nameLookup        func(string) (string, bool)
-	valuePlaceholders map[string]types.AttributeValue
-	valueLookup       func(string) (types.AttributeValue, bool)
-	timeSource        timeSource
-	ctxResultSet      *models.ResultSet
+	namePlaceholders     map[string]string
+	nameLookup           func(string) (string, bool)
+	valuePlaceholders    map[string]types.AttributeValue
+	valueLookup          func(string) (types.AttributeValue, bool)
+	timeSource           timeSource
+	ctxResultSet         *models.ResultSet
+	pasteboardController PasteBoardController
 }
 
 func (ec *evalContext) lookupName(name string) (string, bool) {
