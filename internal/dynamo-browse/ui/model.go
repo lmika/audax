@@ -3,7 +3,7 @@ package ui
 import (
 	"log"
 	"os"
-	"strings"
+	"ucl.lmika.dev/ucl"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -97,30 +97,32 @@ func NewModel(
 	cc.AddCommands(&commandctrl.CommandList{
 		Commands: map[string]commandctrl.Command{
 			"quit": commandctrl.NoArgCommand(tea.Quit),
-			"table": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
-				if len(args) == 0 {
-					return rc.ListTables(false)
-				} else {
-					return rc.ScanTable(args[0])
+			"table": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+				var tableName string
+				if err := args.Bind(&tableName); err == nil {
+					return rc.ScanTable(tableName)
 				}
+
+				return rc.ListTables(false)
 			},
-			"export": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
-				if len(args) == 0 {
+			"export": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+				var filename string
+				if err := args.Bind(&filename); err != nil {
 					return events.Error(errors.New("expected filename"))
 				}
 
-				opts := controllers.ExportOptions{}
-				if len(args) == 2 && args[0] == "-all" {
-					opts.AllResults = true
-					args = args[1:]
+				opts := controllers.ExportOptions{
+					AllResults: args.HasSwitch("all"),
 				}
 
-				return exportController.ExportCSV(args[0], opts)
+				return exportController.ExportCSV(filename, opts)
 			},
-			"mark": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
+			"mark": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
 				var markOp = controllers.MarkOpMark
-				if len(args) > 0 {
-					switch args[0] {
+
+				var markOpStr string
+				if err := args.Bind(&markOpStr); err == nil {
+					switch markOpStr {
 					case "all":
 						markOp = controllers.MarkOpMark
 					case "none":
@@ -133,108 +135,119 @@ func NewModel(
 				}
 
 				var whereExpr = ""
-				if len(args) == 3 && args[1] == "-where" {
-					whereExpr = args[2]
-				}
+				_ = args.BindSwitch("where", &whereExpr)
 
 				return rc.Mark(markOp, whereExpr)
 			},
-			"next-page": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
+			"unmark": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+				return rc.Mark(controllers.MarkOpUnmark, "")
+			},
+			"next-page": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
 				return rc.NextPage()
 			},
 			"delete": commandctrl.NoArgCommand(wc.DeleteMarked),
 
 			// TEMP
 			"new-item": commandctrl.NoArgCommand(wc.NewItem),
-			"clone": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
+			"clone": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
 				return wc.CloneItem(dtv.SelectedItemIndex())
 			},
-			"set-attr": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
-				if len(args) == 0 {
+			"set-attr": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+				var fieldName string
+				if err := args.Bind(&fieldName); err != nil {
 					return events.Error(errors.New("expected field"))
 				}
 
 				var itemType = models.UnsetItemType
-				if len(args) == 2 {
-					switch strings.ToUpper(args[0]) {
-					case "-S":
-						itemType = models.StringItemType
-					case "-N":
-						itemType = models.NumberItemType
-					case "-BOOL":
-						itemType = models.BoolItemType
-					case "-NULL":
-						itemType = models.NullItemType
-					case "-TO":
-						itemType = models.ExprValueItemType
-					default:
-						return events.Error(errors.New("unrecognised item type"))
-					}
-					args = args[1:]
+				switch {
+				case args.HasSwitch("S"):
+					itemType = models.StringItemType
+				case args.HasSwitch("N"):
+					itemType = models.NumberItemType
+				case args.HasSwitch("BOOL"):
+					itemType = models.BoolItemType
+				case args.HasSwitch("NULL"):
+					itemType = models.NullItemType
+				case args.HasSwitch("TO"):
+					itemType = models.ExprValueItemType
 				}
 
-				return wc.SetAttributeValue(dtv.SelectedItemIndex(), itemType, args[0])
+				return wc.SetAttributeValue(dtv.SelectedItemIndex(), itemType, fieldName)
 			},
-			"del-attr": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
-				if len(args) == 0 {
+			"del-attr": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+				var fieldName string
+				// TODO: support rest args
+				if err := args.Bind(&fieldName); err != nil {
 					return events.Error(errors.New("expected field"))
 				}
-				return wc.DeleteAttribute(dtv.SelectedItemIndex(), args[0])
+
+				return wc.DeleteAttribute(dtv.SelectedItemIndex(), fieldName)
 			},
 
-			"put": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
+			"put": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
 				return wc.PutItems()
 			},
-			"touch": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
+			"touch": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
 				return wc.TouchItem(dtv.SelectedItemIndex())
 			},
-			"noisy-touch": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
+			"noisy-touch": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
 				return wc.NoisyTouchItem(dtv.SelectedItemIndex())
 			},
 
-			"echo": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
-				s := new(strings.Builder)
-				for _, arg := range args {
-					s.WriteString(arg)
+			/*
+				"echo": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+					s := new(strings.Builder)
+					for _, arg := range args {
+						s.WriteString(arg)
+					}
+					return events.StatusMsg(s.String())
+				},
+			*/
+			"set-opt": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+				var name string
+				if err := args.Bind(&name); err != nil {
+					return events.Error(errors.New("expected settingName"))
 				}
-				return events.StatusMsg(s.String())
-			},
-			"set": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
-				switch len(args) {
-				case 1:
-					return settingsController.SetSetting(args[0], "")
-				case 2:
-					return settingsController.SetSetting(args[0], args[1])
+
+				var value string
+				if err := args.Bind(&value); err == nil {
+					return settingsController.SetSetting(name, value)
 				}
-				return events.Error(errors.New("expected: settingName [value]"))
+
+				return settingsController.SetSetting(name, "")
 			},
-			"rebind": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
-				if len(args) != 2 {
+			"rebind": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+				var bindingName, newKey string
+				if err := args.Bind(&bindingName, &newKey); err != nil {
 					return events.Error(errors.New("expected: bindingName newKey"))
 				}
-				return keyBindingController.Rebind(args[0], args[1], ctx.FromFile)
+
+				return keyBindingController.Rebind(bindingName, newKey, ctx.FromFile)
 			},
 
-			"run-script": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
-				if len(args) != 1 {
+			"run-script": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+				var name string
+				if err := args.Bind(&name); err != nil {
 					return events.Error(errors.New("expected: script name"))
 				}
-				return scriptController.RunScript(args[0])
+
+				return scriptController.RunScript(name)
 			},
-			"load-script": func(ctx commandctrl.ExecContext, args []string) tea.Msg {
-				if len(args) != 1 {
+			"load-script": func(ctx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
+				var name string
+				if err := args.Bind(&name); err != nil {
 					return events.Error(errors.New("expected: script name"))
 				}
-				return scriptController.LoadScript(args[0])
+
+				return scriptController.LoadScript(name)
 			},
 
 			// Aliases
-			"unmark": cc.Alias("mark", []string{"none"}),
-			"sa":     cc.Alias("set-attr", nil),
-			"da":     cc.Alias("del-attr", nil),
-			"np":     cc.Alias("next-page", nil),
-			"w":      cc.Alias("put", nil),
-			"q":      cc.Alias("quit", nil),
+			"sa": cc.Alias("set-attr"),
+			"da": cc.Alias("del-attr"),
+			"np": cc.Alias("next-page"),
+			"w":  cc.Alias("put"),
+			"q":  cc.Alias("quit"),
 		},
 	})
 

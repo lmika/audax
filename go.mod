@@ -1,11 +1,9 @@
 module github.com/lmika/dynamo-browse
 
-go 1.22
-
-toolchain go1.22.0
+go 1.23.1
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0-beta.5
+	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/asdine/storm v2.1.2+incompatible
 	github.com/aws/aws-sdk-go-v2 v1.18.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.27
@@ -23,15 +21,16 @@ require (
 	github.com/cloudcmds/tamarin v1.0.0
 	github.com/lmika/events v0.0.0-20200906102219-a2269cd4394e
 	github.com/lmika/go-bubble-table v0.2.2-0.20220616114432-6bbb2995e538
-	github.com/lmika/gopkgs v0.0.0-20211210041137-0dc91e939890
+	github.com/lmika/gopkgs v0.0.0-20240408110817-a02f6fc67d1f
 	github.com/lmika/shellwords v0.0.0-20140714114018-ce258dd729fe
 	github.com/mattn/go-runewidth v0.0.14
 	github.com/muesli/ansi v0.0.0-20211031195517-c9f0611b6c70
 	github.com/muesli/reflow v0.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	golang.design/x/clipboard v0.6.2
 	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
+	golang.org/x/sync v0.1.0
 )
 
 require (
@@ -101,7 +100,7 @@ require (
 	github.com/risor-io/risor v1.4.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
@@ -117,4 +116,5 @@ require (
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	ucl.lmika.dev v0.0.0-20240504013531-0dc9fd3c3281 // indirect
 )

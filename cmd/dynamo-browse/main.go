@@ -187,6 +187,7 @@ func main() {
 	jobsController.SetMessageSender(p.Send)
 	scriptController.Init()
 	scriptController.SetMessageSender(p.Send)
+	go commandController.StartMessageSender(p.Send)
 
 	log.Println("launching")
 	if err := p.Start(); err != nil {

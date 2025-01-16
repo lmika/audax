@@ -1,11 +1,14 @@
 package commandctrl
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"ucl.lmika.dev/ucl"
+)
 
-type Command func(ctx ExecContext, args []string) tea.Msg
+type Command func(ctx ExecContext, args ucl.CallArgs) tea.Msg
 
 func NoArgCommand(cmd tea.Cmd) Command {
-	return func(ctx ExecContext, args []string) tea.Msg {
+	return func(ctx ExecContext, args ucl.CallArgs) tea.Msg {
 		return cmd()
 	}
 }

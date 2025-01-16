@@ -38,3 +38,18 @@ func currentResultSetFromContext(ctx context.Context) *models.ResultSet {
 	}
 	return nil
 }
+
+type currentPasteboardControllerKeyType struct{}
+
+var currentPasteboardControllerKey = currentPasteboardControllerKeyType{}
+
+func currentPasteboardControllerFromContext(ctx context.Context) PasteBoardController {
+	if crs, ok := ctx.Value(currentPasteboardControllerKey).(PasteBoardController); ok {
+		return crs
+	}
+	return nil
+}
+
+type PasteBoardController interface {
+	ReadText() (string, bool)
+}

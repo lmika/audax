@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"ucl.lmika.dev/ucl"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lmika/dynamo-browse/internal/common/ui/commandctrl"
@@ -106,11 +107,19 @@ func (sc *ScriptController) LookupCommand(name string) commandctrl.Command {
 		return nil
 	}
 
-	return func(execCtx commandctrl.ExecContext, args []string) tea.Msg {
+	return func(execCtx commandctrl.ExecContext, args ucl.CallArgs) tea.Msg {
 		errChan := sc.waitAndPrintScriptError()
 		ctx := context.Background()
 
-		if err := cmd.Invoke(ctx, args, errChan); err != nil {
+		invokeArgs := make([]string, 0)
+		for args.NArgs() > 0 {
+			var s string
+			if err := args.Bind(&s); err == nil {
+				invokeArgs = append(invokeArgs, s)
+			}
+		}
+
+		if err := cmd.Invoke(ctx, invokeArgs, errChan); err != nil {
 			return events.Error(err)
 		}
 		return nil

@@ -2,6 +2,11 @@ package queryexpr
 
 import (
 	"context"
+	"encoding/csv"
+	"github.com/lmika/dynamo-browse/internal/common/sliceutils"
+	"io"
+	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -51,6 +56,73 @@ var nativeFuncs = map[string]nativeFunc{
 		return listExprValue(xs), nil
 	},
 
+	"csv": func(ctx context.Context, args []exprValue) (exprValue, error) {
+		if len(args) < 2 {
+			return nil, InvalidArgumentNumberError{Name: "csv", Expected: 2, Actual: len(args)}
+		}
+
+		filename, ok := args[0].(stringableExprValue)
+		if !ok {
+			return nil, InvalidArgumentTypeError{Name: "csv", ArgIndex: 0, Expected: "string"}
+		}
+		fieldName, ok := args[1].(stringExprValue)
+		if !ok {
+			return nil, InvalidArgumentTypeError{Name: "csv", ArgIndex: 1, Expected: "string"}
+		}
+
+		startIndex := 0
+		if len(args) == 3 {
+			if idx, ok := args[2].(numberableExprValue); ok {
+				startIndex = int(idx.asInt())
+			}
+		}
+
+		f, err := os.Open(filename.asString())
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+
+		cr := csv.NewReader(f)
+
+		header, err := cr.Read()
+		if err != nil {
+			return nil, err
+		}
+
+		headerIndex := -1
+		for i, h := range header {
+			if h == fieldName.asString() {
+				headerIndex = i
+				break
+			}
+		}
+		if headerIndex == -1 {
+			return nil, errors.New("csv header not found")
+		}
+
+		count := 0
+		newList := make([]exprValue, 0)
+		for count < 100 {
+			record, err := cr.Read()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				return nil, err
+			}
+
+			if startIndex > 0 {
+				startIndex--
+				continue
+			}
+
+			newList = append(newList, stringExprValue(record[headerIndex]))
+			count += 1
+		}
+
+		return listExprValue(newList), nil
+	},
+
 	"marked": func(ctx context.Context, args []exprValue) (exprValue, error) {
 		if len(args) != 1 {
 			return nil, InvalidArgumentNumberError{Name: "marked", Expected: 1, Actual: len(args)}
@@ -85,6 +157,53 @@ var nativeFuncs = map[string]nativeFunc{
 			items = append(items, exprAttrValue)
 		}
 		return listExprValue(items), nil
+	},
+
+	"mapstr": func(ctx context.Context, args []exprValue) (exprValue, error) {
+		if len(args) != 2 {
+			return nil, InvalidArgumentNumberError{Name: "map", Expected: 2, Actual: len(args)}
+		}
+
+		fromList, ok := args[0].(slicableExprValue)
+		if !ok {
+			return nil, InvalidArgumentTypeError{Name: "map", ArgIndex: 0, Expected: "L"}
+		}
+		pattern, ok := args[1].(stringableExprValue)
+		if !ok {
+			return nil, InvalidArgumentTypeError{Name: "map", ArgIndex: 1, Expected: "S"}
+		}
+
+		newList := make([]exprValue, fromList.len())
+		for i := 0; i < fromList.len(); i++ {
+			itm, err := fromList.valueAt(i)
+			if err != nil {
+				return nil, err
+			}
+
+			strItem, ok := itm.(stringableExprValue)
+			if !ok {
+				newList[i] = strItem
+				continue
+			}
+
+			newList[i] = stringExprValue(strings.Replace(pattern.asString(), "{}", strItem.asString(), -1))
+		}
+		return listExprValue(newList), nil
+	},
+
+	"pasteboard": func(ctx context.Context, args []exprValue) (exprValue, error) {
+		pbc := currentPasteboardControllerFromContext(ctx)
+		if pbc == nil {
+			return listExprValue{}, nil
+		}
+
+		txt, ok := pbc.ReadText()
+		if !ok {
+			return listExprValue{}, nil
+		}
+
+		lines := strings.Split(txt, "\n")
+		return listExprValue(sliceutils.Map(lines, func(l string) exprValue { return stringExprValue(l) })), nil
 	},
 
 	"_x_now": func(ctx context.Context, args []exprValue) (exprValue, error) {
