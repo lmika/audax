@@ -116,5 +116,5 @@ require (
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	ucl.lmika.dev v0.0.0-20240501110514-25594c80d273 // indirect
+	ucl.lmika.dev v0.0.0-20240504013531-0dc9fd3c3281 // indirect
 )

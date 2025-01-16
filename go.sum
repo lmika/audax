@@ -5,6 +5,8 @@ github.com/DataDog/zstd v1.5.2/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwS
 github.com/Sereal/Sereal v0.0.0-20220220040404-e0d1e550e879 h1:M5ptEKnqKqpFTKbe+p5zEf3ro1deJ6opUz5j3g3/ErQ=
 github.com/Sereal/Sereal v0.0.0-20220220040404-e0d1e550e879/go.mod h1:D0JMgToj/WdxCgd30Kc1UcA9E+WdZoJqeVOuYW7iTBM=
 github.com/alecthomas/assert/v2 v2.0.3 h1:WKqJODfOiQG0nEJKFKzDIG3E29CN2/4zR9XGJzKIkbg=
+github.com/alecthomas/participle v0.7.1 h1:2bN7reTw//5f0cugJcTOnY/NYZcWQOaajW+BwZB5xWs=
+github.com/alecthomas/participle v0.7.1/go.mod h1:HfdmEuwvr12HXQN44HPWXR0lHmVolVYe4dyL6lQ3duY=
 github.com/alecthomas/participle/v2 v2.0.0-beta.5 h1:y6dsSYVb1G5eK6mgmy+BgI3Mw35a3WghArZ/Hbebrjo=
 github.com/alecthomas/participle/v2 v2.0.0-beta.5/go.mod h1:RC764t6n4L8D8ITAJv0qdokritYSNR3wV5cVwmIEaMM=
 github.com/alecthomas/participle/v2 v2.1.1 h1:hrjKESvSqGHzRb4yW1ciisFJ4p3MGYih6icjJvbsmV8=
@@ -432,3 +434,7 @@ ucl.lmika.dev v0.0.0-20240427010304-6315afc54287 h1:llPHrjca54duvQx9PgMTFDhOW2VQ
 ucl.lmika.dev v0.0.0-20240427010304-6315afc54287/go.mod h1:T6V4jIUxlWvMTgn4J752VDHNA8iyVrEX6v98EvDj8G4=
 ucl.lmika.dev v0.0.0-20240501110514-25594c80d273 h1:+JpKw02VTAcOjJw7Q6juun/9hk9ypNSdTRlf+E4M5Nw=
 ucl.lmika.dev v0.0.0-20240501110514-25594c80d273/go.mod h1:T6V4jIUxlWvMTgn4J752VDHNA8iyVrEX6v98EvDj8G4=
+ucl.lmika.dev v0.0.0-20240504001444-cf3a12bf0d4d h1:OqGmR0Y+OG6aFIOlXy2QwEHtuUNasYCh/6cxHokYQj4=
+ucl.lmika.dev v0.0.0-20240504001444-cf3a12bf0d4d/go.mod h1:T6V4jIUxlWvMTgn4J752VDHNA8iyVrEX6v98EvDj8G4=
+ucl.lmika.dev v0.0.0-20240504013531-0dc9fd3c3281 h1:/M7phiv/0XVp3wKkOxEnGQysf8+RS6NOaBQZyUEoSsA=
+ucl.lmika.dev v0.0.0-20240504013531-0dc9fd3c3281/go.mod h1:T6V4jIUxlWvMTgn4J752VDHNA8iyVrEX6v98EvDj8G4=

@@ -1,8 +1,6 @@
 package commandctrl
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pkg/errors"
@@ -11,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"ucl.lmika.dev/ucl"
+	"ucl.lmika.dev/ucl/builtins"
 
 	"github.com/lmika/dynamo-browse/internal/common/ui/events"
 	"github.com/lmika/shellwords"
@@ -25,6 +24,7 @@ type CommandController struct {
 	lookupExtensions   []CommandLookupExtension
 	completionProvider CommandCompletionProvider
 	msgChan            chan tea.Msg
+	interactive        bool
 }
 
 func NewCommandController(historyProvider IterProvider) *CommandController {
@@ -33,10 +33,13 @@ func NewCommandController(historyProvider IterProvider) *CommandController {
 		commandList:      nil,
 		lookupExtensions: nil,
 		msgChan:          make(chan tea.Msg),
+		interactive:      true,
 	}
 	cc.uclInst = ucl.New(
 		ucl.WithOut(ucl.LineHandler(cc.printLine)),
 		ucl.WithMissingBuiltinHandler(cc.cmdInvoker),
+		ucl.WithModule(builtins.OS()),
+		ucl.WithModule(builtins.FS(nil)),
 	)
 	return cc
 }
@@ -136,6 +139,12 @@ func (c *CommandController) lookupCommand(name string) Command {
 }
 
 func (c *CommandController) ExecuteFile(filename string) error {
+	oldInteractive := c.interactive
+	c.interactive = false
+	defer func() {
+		c.interactive = oldInteractive
+	}()
+
 	baseFilename := filepath.Base(filename)
 
 	if rcFile, err := os.ReadFile(filename); err == nil {
@@ -149,27 +158,14 @@ func (c *CommandController) ExecuteFile(filename string) error {
 }
 
 func (c *CommandController) executeFile(file []byte, filename string) error {
-	scnr := bufio.NewScanner(bytes.NewReader(file))
-
-	lineNo := 0
-	for scnr.Scan() {
-		lineNo++
-		line := strings.TrimSpace(scnr.Text())
-		if line == "" {
-			continue
-		} else if line[0] == '#' {
-			continue
-		}
-
-		msg := c.execute(ExecContext{FromFile: true}, line)
-		switch m := msg.(type) {
-		case events.ErrorMsg:
-			log.Printf("%v:%v: error - %v", filename, lineNo, m.Error())
-		case events.StatusMsg:
-			log.Printf("%v:%v: %v", filename, lineNo, string(m))
-		}
+	msg := c.execute(ExecContext{FromFile: true}, string(file))
+	switch m := msg.(type) {
+	case events.ErrorMsg:
+		log.Printf("%v: error - %v", filename, m.Error())
+	case events.StatusMsg:
+		log.Printf("%v: %v", filename, string(m))
 	}
-	return scnr.Err()
+	return nil
 }
 
 func (c *CommandController) cmdInvoker(ctx context.Context, name string, args ucl.CallArgs) (any, error) {
@@ -186,6 +182,11 @@ func (c *CommandController) cmdInvoker(ctx context.Context, name string, args uc
 }
 
 func (c *CommandController) printLine(s string) {
+	if c.msgChan == nil || !c.interactive {
+		log.Println(s)
+		return
+	}
+
 	select {
 	case c.msgChan <- events.StatusMsg(s):
 	default:
